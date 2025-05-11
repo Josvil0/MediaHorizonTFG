@@ -101,21 +101,19 @@ export default function DetailScreen({ route }) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.relatedList}
             renderItem={({ item }) => {
-              const thumb = getImageUrl(item);
               return (
                 <Pressable
                   style={styles.relatedCard}
                   onPress={() => {
-                    const formattedBook = {
+                    const relatedBook = {
                       ...item.volumeInfo,
-                      id: item.id,
-                      previewLink: item.volumeInfo?.previewLink,
+                      id: item.id, // Incluye el ID del libro
                     };
-                    navigation.push('Detalle', { book: formattedBook });
+                    navigation.push('DetalleLibro', { book: relatedBook });
                   }}
                 >
                   <Image
-                    source={typeof thumb === 'string' ? { uri: thumb } : thumb}
+                    source={getImageUrl(item)}
                     style={styles.relatedImage}
                     onError={(e) => {
                       console.error('Error al cargar la imagen relacionada:', e.nativeEvent.error);

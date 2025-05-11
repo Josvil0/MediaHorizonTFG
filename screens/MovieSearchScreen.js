@@ -10,20 +10,33 @@ import {
   StyleSheet,
 } from 'react-native';
 
-export default function HomeScreen({ navigation }) {
+const TMDB_ACCESS_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzOGQ2OGY2MDZjYmRkMDZmNjE0MDNhNmM2ZTQwYTU0OCIsInN1YiI6IjY3NTM0ZmQ2ODAyYmFkMTYwOTFhYzU1NiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ZnqOLJwRFS_AfVj28xAYqw4rfJK7omTi7wLWYJn3ROw';
+
+export default function MovieSearchScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const searchBooks = async () => {
-    if (!query.trim()) return;
+  const searchMoviesAndSeries = async () => {
+    if (!query.trim()) {
+      console.error('El término de búsqueda está vacío');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+      const url = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&language=es-ES&api_key=38d68f606cbdd06f61403a6c6e40a548`;
+
+      const res = await fetch(url);
       const data = await res.json();
-      setResults(data.items || []);
+
+      if (res.ok) {
+        setResults(data.results || []);
+      } else {
+        console.error('Error en la respuesta de TMDb:', data);
+      }
     } catch (error) {
-      console.error('Error fetching books:', error);
+      console.error('Error fetching TMDb content:', error);
     } finally {
       setLoading(false);
     }
@@ -35,15 +48,15 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => navigation.navigate('Inicio')}
-          style={[styles.headerButton, styles.activeHeaderButton]}
+          style={styles.headerButton}
         >
-          <Text style={[styles.headerButtonText, styles.activeHeaderButtonText]}>📚 Libros</Text>
+          <Text style={styles.headerButtonText}>📚 Libros</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => navigation.navigate('BuscarPelículas')}
-          style={styles.headerButton}
+          style={[styles.headerButton, styles.activeHeaderButton]}
         >
-          <Text style={styles.headerButtonText}>🎬 Películas</Text>
+          <Text style={[styles.headerButtonText, styles.activeHeaderButtonText]}>🎬 Películas</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => navigation.navigate('BuscarMúsica')}
@@ -53,46 +66,49 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Barra de búsqueda de libros */}
+      {/* Barra de búsqueda de películas */}
       <View style={styles.searchBar}>
         <TextInput
-          placeholder="Buscar libros..."
+          placeholder="Buscar en TMDb..."
           placeholderTextColor="#9CA3AF"
           value={query}
           onChangeText={setQuery}
-          onSubmitEditing={searchBooks}
+          onSubmitEditing={searchMoviesAndSeries}
           style={styles.input}
         />
-        <TouchableOpacity onPress={searchBooks} style={styles.searchButton}>
+        <TouchableOpacity onPress={searchMoviesAndSeries} style={styles.searchButton}>
           <Text style={styles.searchButtonText}>Buscar</Text>
         </TouchableOpacity>
       </View>
 
       {loading && <ActivityIndicator size="large" color="#6366F1" style={{ marginVertical: 20 }} />}
 
+      {results.length === 0 && !loading && (
+        <Text style={{ textAlign: 'center', color: '#6B7280', marginTop: 20 }}>
+          No se encontraron resultados.
+        </Text>
+      )}
+
       <FlatList
         data={results}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id?.toString()}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {
-          const book = item.volumeInfo;
-          let imageUrl = book.imageLinks?.smallThumbnail || book.imageLinks?.thumbnail;
-          imageUrl = imageUrl
-            ? imageUrl.replace(/^http:\/\//i, 'https://')
-            : 'https://cdn-icons-png.flaticon.com/512/29/29302.png'; // Placeholder
+          const title = item.title || item.name || 'Sin título';
+          const overview = item.overview || 'Sin descripción';
+          const imageUrl = item.poster_path
+            ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+            : 'https://cdn-icons-png.flaticon.com/512/4076/4076549.png';
 
           return (
             <TouchableOpacity
-              onPress={() => navigation.navigate('DetalleLibro', { book })}
               style={styles.card}
+              onPress={() => navigation.navigate('DetallePelícula', { movie: item })}
             >
-              <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+              <Image source={{ uri: imageUrl }} style={styles.image} />
               <View style={styles.info}>
-                <Text numberOfLines={2} style={styles.bookTitle}>{book.title}</Text>
-                <Text style={styles.bookAuthor}>{book.authors?.join(', ') || 'Autor desconocido'}</Text>
-                {book.publishedDate && (
-                  <Text style={styles.bookDate}>Publicado: {book.publishedDate}</Text>
-                )}
+                <Text numberOfLines={2} style={styles.title}>{title}</Text>
+                <Text numberOfLines={3} style={styles.overview}>{overview}</Text>
               </View>
             </TouchableOpacity>
           );
@@ -103,11 +119,7 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-    padding: 16,
-  },
+  container: { flex: 1, backgroundColor: '#F9FAFB', padding: 16 },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -140,23 +152,15 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    marginBottom: 16,
+    elevation: 2,
   },
-  input: {
-    flex: 1,
-    color: '#111827',
-    fontSize: 16,
-  },
+  input: { flex: 1, fontSize: 16, color: '#111827' },
   searchButton: {
     backgroundColor: '#6366F1',
     paddingVertical: 8,
@@ -164,47 +168,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginLeft: 8,
   },
-  searchButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  list: {
-    paddingBottom: 24,
-  },
+  searchButtonText: { color: '#fff', fontWeight: 'bold' },
+  list: { paddingBottom: 24 },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    elevation: 1,
   },
-  image: {
-    width: 110,
-    height: 160,
-  },
-  info: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
-  },
-  bookTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  bookAuthor: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  bookDate: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
+  image: { width: 100, height: 150 },
+  info: { flex: 1, padding: 12, justifyContent: 'center' },
+  title: { fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 4 },
+  overview: { fontSize: 14, color: '#6B7280' },
 });
