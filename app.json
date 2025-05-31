@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "MediaHorizon",
+    "platforms": ["ios", "android", "web"],
     "slug": "MediaHorizon",
     "version": "1.0.0",
     "orientation": "portrait",
