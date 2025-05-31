@@ -10,11 +10,17 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
+    "@react-navigation/bottom-tabs": "^7.3.14",
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.3.10",
+    "@supabase/supabase-js": "^2.49.4",
     "babel-preset-expo": "^13.1.11",
     "expo": "~52.0.46",
+    "expo-av": "~15.0.2",
+    "expo-image-picker": "^16.1.4",
+    "expo-linear-gradient": "~14.0.2",
     "expo-status-bar": "~2.0.1",
+    "fast-xml-parser": "^5.2.3",
     "nativewind": "^4.1.23",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -26,9 +32,7 @@
     "react-native-svg": "15.8.0",
     "react-native-tailwindcss": "^1.1.11",
     "react-native-web": "~0.19.13",
-    "tailwindcss": "^3.4.17",
-    "expo-linear-gradient": "~14.0.2",
-    "expo-av": "~15.0.2"
+    "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

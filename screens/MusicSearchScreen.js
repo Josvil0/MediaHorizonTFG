@@ -1,3 +1,4 @@
+// Pantalla para buscar canciones y artistas usando la API de Deezer (a través de un proxy).
 import React, { useState } from 'react';
 import {
   View,
@@ -10,50 +11,46 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MusicSearchScreen() {
+  // Estado para el texto de búsqueda
   const [query, setQuery] = useState('');
+  // Estado para los resultados de la búsqueda
   const [results, setResults] = useState([]);
+  // Estado para saber si está cargando
   const [loading, setLoading] = useState(false);
+  // Hook para navegar entre pantallas
   const navigation = useNavigation();
 
+  // Función para buscar música en Deezer usando un proxy (por CORS)
   const searchMusic = async () => {
-    if (!query.trim()) {
-      console.error('El término de búsqueda está vacío');
-      return;
-    }
+    if (!query.trim()) return; // Si no hay texto, no busca
 
-    setLoading(true);
-
+    setLoading(true); // Muestra el spinner de carga
     try {
-      // Usar proxy público para evitar problemas de CORS
-      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-      const url = `${proxyUrl}https://api.deezer.com/search?q=${encodeURIComponent(query)}`;
-
+      // Llama al proxy que a su vez llama a la API de Deezer
+      const url = `https://proxy-media-horizon.vercel.app/api/proxy?url=https://api.deezer.com/search?q=${encodeURIComponent(query)}`;
       const res = await fetch(url);
-
-      if (!res.ok) {
-        throw new Error(`Error en la solicitud: ${res.status} ${res.statusText}`);
-      }
-
       const data = await res.json();
+      console.log('Respuesta del proxy:', data); // Para depurar la respuesta
 
       if (data && data.data) {
-        setResults(data.data);
+        setResults(data.data); // Guarda los resultados de Deezer
       } else {
-        console.error('No se recibieron datos válidos:', data);
-        setResults([]);
+        setResults([]); // Si no hay resultados, deja la lista vacía
       }
     } catch (err) {
-      console.error('Error buscando en Deezer:', err);
+      console.error('Error en fetch:', err); // Muestra el error en consola
+      setResults([]); // Si hay error, deja la lista vacía
     } finally {
-      setLoading(false);
+      setLoading(false); // Oculta el spinner
     }
   };
 
   return (
     <View style={styles.container}>
-
+      {/* Encabezado con botones para cambiar de sección */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => navigation.navigate('Inicio')}
@@ -75,6 +72,7 @@ export default function MusicSearchScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Barra de búsqueda de música */}
       <View style={styles.searchBar}>
         <TextInput
           placeholder="Buscar canciones, artistas..."
@@ -89,8 +87,10 @@ export default function MusicSearchScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Spinner de carga mientras busca */}
       {loading && <ActivityIndicator size="large" color="#6366F1" style={{ marginVertical: 20 }} />}
 
+      {/* Lista de resultados de canciones */}
       <FlatList
         data={results}
         keyExtractor={(item) => item.id.toString()}

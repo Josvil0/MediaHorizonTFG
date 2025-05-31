@@ -1,3 +1,7 @@
+// Pantalla para buscar películas y series usando la API de TMDb.
+// El usuario puede escribir el título y ver los resultados en una lista.
+// También puede cambiar entre buscar libros, películas o música.
+
 import React, { useState } from 'react';
 import {
   View,
@@ -9,42 +13,49 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
+// Token de acceso a la API de TMDb.
 const TMDB_ACCESS_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzOGQ2OGY2MDZjYmRkMDZmNjE0MDNhNmM2ZTQwYTU0OCIsInN1YiI6IjY3NTM0ZmQ2ODAyYmFkMTYwOTFhYzU1NiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ZnqOLJwRFS_AfVj28xAYqw4rfJK7omTi7wLWYJn3ROw';
 
 export default function MovieSearchScreen({ navigation }) {
+  // Estado para el texto de búsqueda
   const [query, setQuery] = useState('');
+  // Estado para los resultados de la búsqueda
   const [results, setResults] = useState([]);
+  // Estado para saber si está cargando
   const [loading, setLoading] = useState(false);
 
+  // Función para buscar películas y series en TMDb
   const searchMoviesAndSeries = async () => {
     if (!query.trim()) {
       console.error('El término de búsqueda está vacío');
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // Muestra el spinner de carga
     try {
+      // Llama a la API de TMDb con el texto de búsqueda
       const url = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&language=es-ES&api_key=38d68f606cbdd06f61403a6c6e40a548`;
 
       const res = await fetch(url);
       const data = await res.json();
 
       if (res.ok) {
-        setResults(data.results || []);
+        setResults(data.results || []); // Guarda los resultados
       } else {
         console.error('Error en la respuesta de TMDb:', data);
       }
     } catch (error) {
       console.error('Error fetching TMDb content:', error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Oculta el spinner
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Encabezado con botones */}
+      {/* Encabezado con botones para cambiar de sección */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => navigation.navigate('Inicio')}
@@ -81,21 +92,26 @@ export default function MovieSearchScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* Spinner de carga mientras busca */}
       {loading && <ActivityIndicator size="large" color="#6366F1" style={{ marginVertical: 20 }} />}
 
+      {/* Mensaje si no hay resultados */}
       {results.length === 0 && !loading && (
         <Text style={{ textAlign: 'center', color: '#6B7280', marginTop: 20 }}>
           No se encontraron resultados.
         </Text>
       )}
 
+      {/* Lista de resultados de películas y series */}
       <FlatList
         data={results}
         keyExtractor={(item) => item.id?.toString()}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {
+          // Cogemos el título y la descripción
           const title = item.title || item.name || 'Sin título';
           const overview = item.overview || 'Sin descripción';
+          // Imagen del póster o icono por defecto si no hay
           const imageUrl = item.poster_path
             ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
             : 'https://cdn-icons-png.flaticon.com/512/4076/4076549.png';
@@ -118,6 +134,7 @@ export default function MovieSearchScreen({ navigation }) {
   );
 }
 
+// Los estilos están abajo y tienen nombres descriptivos para cada parte de la pantalla
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB', padding: 16 },
   headerContainer: {

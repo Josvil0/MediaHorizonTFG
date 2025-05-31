@@ -1,3 +1,7 @@
+// Pantalla de detalle de una película o serie.
+// Muestra la información principal, la imagen, una descripción y recomendaciones similares.
+// También permite ver y escribir comentarios sobre la película.
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -10,20 +14,28 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import CommentsSection from '../Components/ComentsSection';
 
 const API_KEY = '38d68f606cbdd06f61403a6c6e40a548';
 
 export default function MovieDetailScreen({ route, navigation }) {
+  // Recibimos la película por parámetros de navegación
   const { movie } = route.params;
+  // Estado para las películas similares
   const [similarMovies, setSimilarMovies] = useState([]);
+  // Estado para saber si está cargando las recomendaciones
   const [loadingSimilar, setLoadingSimilar] = useState(true);
 
+  // Función para buscar películas o series similares usando la API de TMDB
   const fetchSimilarMovies = async () => {
+    // Dependiendo si es película o serie, cambia el endpoint
     const endpoint = movie.media_type === 'movie'
       ? `https://api.themoviedb.org/3/movie/${movie.id}/recommendations`
       : `https://api.themoviedb.org/3/tv/${movie.id}/recommendations`;
 
     try {
+      // Llama a la API de TMDB para obtener recomendaciones
       const res = await fetch(`${endpoint}?api_key=${API_KEY}&language=es-ES`);
       const data = await res.json();
       setSimilarMovies(data.results || []);
@@ -34,26 +46,32 @@ export default function MovieDetailScreen({ route, navigation }) {
     }
   };
 
+  // Al montar la pantalla, busca las recomendaciones
   useEffect(() => {
     fetchSimilarMovies();
   }, []);
 
+  // Prepara la URL de la imagen del póster
   const imageUrl = movie.poster_path
     ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
     : 'https://cdn-icons-png.flaticon.com/512/4076/4076549.png';
 
   return (
     <ScrollView style={styles.container}>
+      {/* Imagen principal de la película */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: imageUrl }} style={styles.image} />
       </View>
       <View style={styles.infoContainer}>
+        {/* Título y fecha */}
         <Text style={styles.title}>{movie.title || movie.name || 'Sin título'}</Text>
         <Text style={styles.subtitle}>
           {movie.release_date || movie.first_air_date || 'Fecha desconocida'}
         </Text>
+        {/* Descripción */}
         <Text style={styles.description}>{movie.overview || 'Sin descripción disponible.'}</Text>
 
+        {/* Botón para ir a la web oficial si existe */}
         {movie.homepage && (
           <TouchableOpacity
             style={styles.button}
@@ -63,28 +81,37 @@ export default function MovieDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
+        {/* Sección de recomendaciones */}
         <Text style={styles.sectionTitle}>Recomendaciones</Text>
         {loadingSimilar ? (
+          // Muestra spinner mientras carga
           <ActivityIndicator size="large" color="#6366F1" />
         ) : similarMovies.length > 0 ? (
+          // Lista horizontal de películas similares
           <FlatList
             data={similarMovies}
             keyExtractor={(item) => item.id.toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            snapToInterval={128} // Ajusta según el ancho de tu card
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.card}
                 onPress={() => navigation.push('DetallePelícula', { movie: item })}
               >
-                <Image
-                  source={{
-                    uri: item.poster_path
-                      ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                      : 'https://cdn-icons-png.flaticon.com/512/4076/4076549.png',
-                  }}
-                  style={styles.cardImage}
-                />
+                {/* Imagen del póster o icono si no hay */}
+                {item.poster_path ? (
+                  <Image
+                    source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
+                    style={styles.cardImage}
+                  />
+                ) : (
+                  <View style={[styles.cardImage, { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }]}>
+                    <Ionicons name="film-outline" size={40} color="#6366F1" />
+                  </View>
+                )}
                 <Text style={styles.cardTitle} numberOfLines={2}>
                   {item.title || item.name || 'Sin título'}
                 </Text>
@@ -92,13 +119,22 @@ export default function MovieDetailScreen({ route, navigation }) {
             )}
           />
         ) : (
+          // Si no hay recomendaciones
           <Text style={styles.noSimilarText}>No se encontraron recomendaciones.</Text>
         )}
+
+        {/* Sección de comentarios para la película */}
+        <CommentsSection itemType="movie" itemId={movie.id.toString()} />
       </View>
+      {/* Botón para volver atrás */}
+      <TouchableOpacity style={{ position: 'absolute', top: 40, left: 16, zIndex: 10 }} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={28} color="#6366F1" />
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
+// Los estilos están abajo y tienen nombres descriptivos para cada parte de la pantalla
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   imageContainer: {

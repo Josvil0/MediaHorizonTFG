@@ -1,56 +1,100 @@
+// Importa hooks de React y componentes de React Native
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+
+// Importa el componente para fondos con degradado
 import { LinearGradient } from 'expo-linear-gradient';
 
+// Importa los íconos de Ionicons
+import { Ionicons } from '@expo/vector-icons';
+
+// Importa el componente de comentarios personalizado
+import CommentsSection from '../Components/ComentsSection';
+
+// Componente principal que muestra los detalles del artista
 export default function ArtistDetailsScreen({ route, navigation }) {
+  // Extrae el ID del artista pasado como parámetro de navegación
   const { artistId } = route.params;
+
+  // Estado que guarda los datos del artista
   const [artist, setArtist] = useState(null);
+
+  // Estado que guarda las canciones más populares del artista
   const [topTracks, setTopTracks] = useState([]);
 
+  // Hook que se ejecuta al montar el componente o cambiar artistId
   useEffect(() => {
     const fetchArtistDetails = async () => {
       try {
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const artistUrl = `${proxyUrl}https://api.deezer.com/artist/${artistId}`;
-        const topTracksUrl = `${proxyUrl}https://api.deezer.com/artist/${artistId}/top`;
+        // URLs para obtener los datos del artista y sus canciones más escuchadas
+        const artistUrl = `https://proxy-media-horizon.vercel.app/api/proxy?url=https://api.deezer.com/artist/${artistId}`;
+        const topTracksUrl = `https://proxy-media-horizon.vercel.app/api/proxy?url=https://api.deezer.com/artist/${artistId}/top`;
 
+        // Realiza ambas peticiones en paralelo
         const [artistResponse, topTracksResponse] = await Promise.all([
           fetch(artistUrl),
           fetch(topTracksUrl),
         ]);
 
+        // Convierte las respuestas en JSON
         const artistData = await artistResponse.json();
         const topTracksData = await topTracksResponse.json();
 
+        // Guarda los datos en el estado
         setArtist(artistData);
         setTopTracks(topTracksData.data);
       } catch (error) {
+        // Si ocurre un error, lo muestra por consola
         console.error('Error fetching artist details:', error);
       }
     };
 
+    // Llama a la función para obtener los datos
     fetchArtistDetails();
-  }, [artistId]);
+  }, [artistId]); // Dependencia: se ejecuta cuando cambia artistId
 
   return (
+    // Fondo con degradado usando LinearGradient
     <LinearGradient colors={['#fafafa', '#f0f0ff']} style={styles.gradient}>
       <View style={styles.container}>
+
+        {/* Botón para volver atrás */}
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 40, left: 16, zIndex: 10 }}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={28} color="#6366F1" />
+        </TouchableOpacity>
+
+        {/* Si los datos del artista ya fueron cargados */}
         {artist ? (
           <>
+            {/* Imagen del artista */}
             <Image source={{ uri: artist.picture_big }} style={styles.image} />
+            
+            {/* Nombre del artista */}
             <Text style={styles.name}>{artist.name}</Text>
+
+            {/* Número de fans del artista */}
             <Text style={styles.info}>Fans: {artist.nb_fan.toLocaleString()}</Text>
 
+            {/* Título de la sección de canciones */}
             <Text style={styles.sectionTitle}>Top canciones</Text>
+
+            {/* Lista de canciones más escuchadas */}
             <FlatList
               data={topTracks}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.trackCard}
+                  // Navega a la pantalla de detalles de la canción
                   onPress={() => navigation.navigate('DetalleMúsica', { track: item })}
                 >
+                  {/* Imagen del álbum */}
                   <Image source={{ uri: item.album.cover_medium }} style={styles.trackImage} />
+                  
+                  {/* Título y duración de la canción */}
                   <View style={styles.trackInfo}>
                     <Text style={styles.trackTitle}>{item.title}</Text>
                     <Text style={styles.trackDuration}>
@@ -60,8 +104,14 @@ export default function ArtistDetailsScreen({ route, navigation }) {
                 </TouchableOpacity>
               )}
             />
+
+            {/* Contenedor con información adicional como comentarios */}
+            <View style={styles.infoContainer}>
+              <CommentsSection itemType="artist" itemId={artist.id.toString()} />
+            </View>
           </>
         ) : (
+          // Mensaje de carga si aún no hay datos
           <Text style={styles.loadingText}>Cargando información del artista...</Text>
         )}
       </View>
@@ -69,6 +119,7 @@ export default function ArtistDetailsScreen({ route, navigation }) {
   );
 }
 
+// Estilos del componente
 const styles = StyleSheet.create({
   gradient: {
     flex: 1,
@@ -146,5 +197,9 @@ const styles = StyleSheet.create({
   },
   trackInfo: {
     flex: 1,
+  },
+  infoContainer: {
+    padding: 16,
+    width: '100%',
   },
 });

@@ -1,3 +1,7 @@
+// Pantalla principal para buscar libros usando la API de Google Books.
+// El usuario puede escribir el título de un libro y ver los resultados.
+// También puede navegar a buscar películas o música desde aquí.
+
 import React, { useState } from 'react';
 import {
   View,
@@ -9,29 +13,35 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
+  // Estado para el texto de búsqueda
   const [query, setQuery] = useState('');
+  // Estado para los resultados de la búsqueda
   const [results, setResults] = useState([]);
+  // Estado para saber si está cargando
   const [loading, setLoading] = useState(false);
 
+  // Función para buscar libros en la API de Google Books
   const searchBooks = async () => {
-    if (!query.trim()) return;
-    setLoading(true);
+    if (!query.trim()) return; // Si no hay texto, no busca
+    setLoading(true); // Muestra el spinner de carga
     try {
+      // Llama a la API de Google Books con el texto de búsqueda
       const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
       const data = await res.json();
-      setResults(data.items || []);
+      setResults(data.items || []); // Guarda los resultados
     } catch (error) {
       console.error('Error fetching books:', error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Oculta el spinner
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Encabezado con botones */}
+      {/* Barra superior con los botones para cambiar de sección */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => navigation.navigate('Inicio')}
@@ -68,14 +78,18 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* Spinner de carga mientras busca */}
       {loading && <ActivityIndicator size="large" color="#6366F1" style={{ marginVertical: 20 }} />}
 
+      {/* Lista de resultados de libros */}
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {
+          // Cogemos la info del libro
           const book = item.volumeInfo;
+          // Buscamos la imagen del libro, si no hay ponemos una por defecto
           let imageUrl = book.imageLinks?.smallThumbnail || book.imageLinks?.thumbnail;
           imageUrl = imageUrl
             ? imageUrl.replace(/^http:\/\//i, 'https://')
@@ -83,7 +97,11 @@ export default function HomeScreen({ navigation }) {
 
           return (
             <TouchableOpacity
-              onPress={() => navigation.navigate('DetalleLibro', { book })}
+              onPress={() =>
+                navigation.navigate('DetalleLibro', {
+                  book: { ...book, id: item.id } // Pasamos los datos del libro a la siguiente pantalla
+                })
+              }
               style={styles.card}
             >
               <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
@@ -102,6 +120,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
+// Los estilos están abajo y tienen nombres descriptivos para cada parte de la pantalla
 const styles = StyleSheet.create({
   container: {
     flex: 1,

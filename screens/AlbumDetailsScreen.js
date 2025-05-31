@@ -1,44 +1,67 @@
+// Importaciones necesarias desde React y librerías externas
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient'; // Para fondo con degradado
+import { Ionicons } from '@expo/vector-icons'; // Iconos vectoriales
+import CommentsSection from '../Components/ComentsSection'; // Componente personalizado de comentarios
 
+// Componente principal de la pantalla de detalles del álbum
 export default function AlbumDetailsScreen({ route, navigation }) {
-  const { albumId } = route.params;
-  const [album, setAlbum] = useState(null);
-  const [tracks, setTracks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { albumId } = route.params; // Se obtiene el ID del álbum desde los parámetros de navegación
+  const [album, setAlbum] = useState(null); // Estado para almacenar la info del álbum
+  const [tracks, setTracks] = useState([]); // Estado para almacenar la lista de canciones
+  const [loading, setLoading] = useState(true); // Estado para mostrar si está cargando
 
   useEffect(() => {
+    // Función asincrónica que obtiene los detalles del álbum desde la API de Deezer
     const fetchAlbumDetails = async () => {
       try {
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const url = `${proxyUrl}https://api.deezer.com/album/${albumId}`;
-        const response = await fetch(url);
+        const url = `https://proxy-media-horizon.vercel.app/api/proxy?url=https://api.deezer.com/album/${albumId}`;
+        const response = await fetch(url); // Llamada a API vía proxy
         const data = await response.json();
-        setAlbum(data);
-        setTracks(data.tracks.data);
+        setAlbum(data); // Guardamos la información del álbum
+        setTracks(data.tracks.data); // Guardamos las canciones
       } catch (error) {
-        console.error('Error fetching album details:', error);
+        // Manejo de errores en caso de que la llamada a la API falle
+        console.error('Error al obtener datos del álbum:', error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Terminamos de cargar
       }
     };
 
-    fetchAlbumDetails();
+    fetchAlbumDetails(); // Se ejecuta al montar el componente
   }, [albumId]);
 
   return (
     <LinearGradient colors={['#fafafa', '#f0f0ff']} style={styles.gradient}>
       <View style={styles.container}>
+        {/* Botón de regreso */}
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 40, left: 16, zIndex: 10 }}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={28} color="#6366F1" />
+        </TouchableOpacity>
+
+        {/* Vista de carga */}
         {loading ? (
           <Text style={styles.loadingText}>Cargando canciones...</Text>
         ) : (
           <>
+            {/* Imagen del álbum */}
             <Image source={{ uri: album.cover_big }} style={styles.image} />
+
+            {/* Título y artista */}
             <Text style={styles.title}>{album.title}</Text>
             <Text style={styles.artist}>Por: {album.artist.name}</Text>
             <Text style={styles.info}>Fecha de lanzamiento: {album.release_date}</Text>
 
+            {/* Sección de comentarios */}
+            <View style={styles.infoContainer}>
+              <CommentsSection itemType="album" itemId={album.id.toString()} />
+            </View>
+
+            {/* Lista de canciones */}
             <Text style={styles.sectionTitle}>Canciones</Text>
             <FlatList
               data={tracks}
@@ -53,6 +76,7 @@ export default function AlbumDetailsScreen({ route, navigation }) {
                     <Text style={styles.trackTitle}>{item.title}</Text>
                     <Text style={styles.trackDuration}>
                       Duración: {Math.floor(item.duration / 60)}:{item.duration % 60}s
+                      {/* Podrías mejorar esto con `.padStart(2, '0')` para los segundos */}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -65,6 +89,7 @@ export default function AlbumDetailsScreen({ route, navigation }) {
   );
 }
 
+// Estilos para la pantalla
 const styles = StyleSheet.create({
   gradient: {
     flex: 1,
@@ -110,6 +135,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
+  infoContainer: {
+    padding: 16,
+    width: '100%',
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -118,9 +147,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   trackCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
     marginBottom: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -130,6 +156,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
   },
   trackTitle: {
     fontSize: 16,
